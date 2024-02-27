@@ -1,0 +1,106 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="egovframework.sample.mapper.TestMapper">
+
+	<select id="selectPointList" resultType="egovMap">
+		SELECT
+		    ID,
+		    TITLE
+		FROM
+			public.tb_example
+	</select>
+
+	<select id="makeGeom" resultType="String" parameterType="String">
+		select
+		    <choose>
+				<when test="type == point">
+		    		st_asgeojson(st_makepoint(127,38)) as point_geom
+				</when>
+				<when test="type == line">
+					st_asgeojson(st_makeLine)
+				</when>
+				<when test="type == polygon">
+					st_asgeojson(ST_MakePolygon( ST_GeomFromText('LINESTRING(127 38,127.1 38.1,127.2 38.2,127 38)')));
+				</when>
+			</choose>
+	</select>
+
+	<insert id="boardinsert" parameterType="BoardVO">
+		INSERT INTO board values (nextval('seq_boardnum'),#{boardtitle},#{boardcontent},now())
+	</insert>
+
+	<select id="boardList" resultType="BoardVO" parameterType="Map">
+		SELECT *
+		FROM board
+		order by boardnum desc
+		LIMIT #{limit}
+		OFFSET #{offset}
+	</select>
+
+	<insert id="insert" parameterType="Map">
+		INSERT INTO board values (nextval('seq_boardnum'),#{boardtitle},#{boardcontent},now(),0)
+	</insert>
+
+	<update id="readcount" parameterType="int">
+        UPDATE board set board_readcount = board_readcount + 1 where boardNum = #{boardNum}
+    </update>
+
+	<select id="detailBoard" parameterType="int" resultType="BoardVO">
+		SELECT * FROM board where boardNum = #{boardNUm}
+	</select>
+
+	<delete id="deleteBoard" parameterType="int">
+		delete from board where boardNum = #{boardNum}
+	</delete>
+
+	<update id="modify" parameterType="Map">
+		update board set boardTitle = #{boardTitle}, boardContent = #{boardContent} where boardNum = #{boardNum}
+	</update>
+
+	<select id="countBoard" resultType="int">
+		select count(*) from board
+	</select>
+
+	<select id="search" parameterType="Map" resultType="BoardVO">
+        select
+        *
+        from
+        board
+        where
+        1=1
+            AND boardcontent like concat ('%',#{searchcontent}, '%')
+            AND boardtitle like concat ('%',#{searchtitle}, '%')
+        <if test="searchnum != '' and searchnum != null">
+            AND boardnum = (SELECT
+            CASE
+            WHEN REGEXP_REPLACE(#{searchnum}, '[^0-9]', '', 'g') = '' THEN 0
+            ELSE CAST(REGEXP_REPLACE(#{searchnum}, '[^0-9]', '', 'g') AS INTEGER)
+            END)
+        </if>
+        order by boardnum desc
+
+        <!--			<if test="searchtext != '' and searchtext != null">-->
+        <!--		    	AND boardContent like concat ('%',#{searchtext}, '%')-->
+        <!--			</if>-->
+		LIMIT #{limit}
+        OFFSET #{offset}
+    </select>
+
+	<select id="countsearchBoard" parameterType="Map" resultType="int">
+		select
+		count(*)
+		from
+		board
+		where
+		1=1
+		AND boardcontent like concat ('%',#{searchcontent}, '%')
+		AND boardtitle like concat ('%',#{searchtitle}, '%')
+		<if test="searchnum != '' and searchnum != null">
+			AND boardnum = (SELECT
+			CASE
+			WHEN REGEXP_REPLACE(#{searchnum}, '[^0-9]', '', 'g') = '' THEN 0
+			ELSE CAST(REGEXP_REPLACE(#{searchnum}, '[^0-9]', '', 'g') AS INTEGER)
+			END)
+		</if>
+	</select>
+</mapper>
